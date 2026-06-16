@@ -9,12 +9,14 @@ const QuizContext = createContext(null);
  */
 export function QuizProvider({ children }) {
   const [score, setScore] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState(10);
   const { user } = useAuth();
 
   // Automatically reset score when user logs out
   useEffect(() => {
     if (!user) {
       setScore(0);
+      setTotalQuestions(10);
     }
   }, [user]);
 
@@ -30,7 +32,9 @@ export function QuizProvider({ children }) {
     <QuizContext.Provider
       value={{
         score,
+        totalQuestions,
         updateScore,
+        setTotalQuestions,
         resetQuiz
       }}
     >

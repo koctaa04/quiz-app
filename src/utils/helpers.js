@@ -44,3 +44,17 @@ export function calculatePercentage(score, total) {
   if (!total) return 0;
   return Math.round((score / total) * 100);
 }
+
+/**
+ * Decodes HTML entities in a string.
+ * Uses the browser's DOMParser to safely convert entities like &quot;, &#039;, &amp;, etc.
+ * @param {string} text 
+ * @returns {string} Decoded string
+ */
+export function decodeHtmlEntities(text) {
+  if (!text) return '';
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'text/html');
+  return doc.documentElement.textContent;
+}
+
