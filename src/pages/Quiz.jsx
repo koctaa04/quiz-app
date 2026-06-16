@@ -2,13 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import { useQuiz } from '../context/QuizContext';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Quiz view shell. Displays placeholder quiz question and handles navigation to results.
  */
 export default function Quiz() {
-  const { user, logout } = useQuiz();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   // If no user is logged in, redirect or prompt

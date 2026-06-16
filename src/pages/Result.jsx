@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { useQuiz } from '../context/QuizContext';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Result view shell. Displays candidate performance and choices to retake or sign out.
  */
 export default function Result() {
-  const { user, score, resetQuiz } = useQuiz();
+  const { user, logout } = useAuth();
+  const { score, resetQuiz } = useQuiz();
   const navigate = useNavigate();
 
   // If no user is logged in, redirect or prompt
@@ -77,7 +79,7 @@ export default function Result() {
           
           <Button 
             onClick={() => {
-              resetQuiz();
+              logout();
               navigate('/login');
             }} 
             variant="secondary"

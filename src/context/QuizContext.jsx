@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 // Initialize context
 const QuizContext = createContext(null);
@@ -7,30 +8,15 @@ const QuizContext = createContext(null);
  * QuizProvider provides state management for the user profile, active session, and final score.
  */
 export function QuizProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    // Proactively restore from localStorage to survive page reloads
-    return localStorage.getItem('quiz_username') || '';
-  });
   const [score, setScore] = useState(0);
+  const { user } = useAuth();
 
-  // Sync username changes to localStorage
+  // Automatically reset score when user logs out
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('quiz_username', user);
-    } else {
-      localStorage.removeItem('quiz_username');
+    if (!user) {
+      setScore(0);
     }
   }, [user]);
-
-  const login = (username) => {
-    setUser(username);
-  };
-
-  const logout = () => {
-    setUser('');
-    setScore(0);
-    localStorage.removeItem('quiz_username');
-  };
 
   const updateScore = (newScore) => {
     setScore(newScore);
@@ -43,10 +29,7 @@ export function QuizProvider({ children }) {
   return (
     <QuizContext.Provider
       value={{
-        user,
         score,
-        login,
-        logout,
         updateScore,
         resetQuiz
       }}

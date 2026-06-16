@@ -3,13 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate, NavLink } from 'react-router-do
 import Login from './pages/Login';
 import Quiz from './pages/Quiz';
 import Result from './pages/Result';
-import { useQuiz } from './context/QuizContext';
+import { useAuth } from './context/AuthContext';
 
 /**
  * Navigation Bar Component shown at the top of every view.
  */
 function Header() {
-  const { user } = useQuiz();
+  const { user } = useAuth();
 
   return (
     <header className="app-header">
