@@ -11,7 +11,7 @@ import { calculatePercentage } from '../utils/helpers';
  */
 export default function Result() {
   const { user, logout } = useAuth();
-  const { score, totalQuestions, resetQuiz } = useQuiz();
+  const { score, totalQuestions, resetQuiz, clearQuizSession } = useQuiz();
   const navigate = useNavigate();
 
   // If no user is logged in, redirect or prompt
@@ -106,6 +106,7 @@ export default function Result() {
           
           <Button 
             onClick={() => {
+              clearQuizSession();
               logout();
               navigate('/login');
             }} 

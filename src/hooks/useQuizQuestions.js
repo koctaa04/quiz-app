@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useQuiz } from '../context/QuizContext';
 import { triviaApi } from '../services/triviaApi';
@@ -7,19 +7,23 @@ const CACHE_KEY = 'quiz_questions_cache';
 const CACHE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
 /**
- * Custom hook to manage fetching trivia questions.
- * Implements client-side caching in localStorage, React Strict Mode fetch protection,
- * robust error state management, and manual retries.
+ * Custom hook to manage fetching trivia questions synchronized with QuizContext.
+ * Implements candidate-specific caching in localStorage, React Strict Mode fetch protection,
+ * and retrying.
  * 
  * @returns {object} { questions, loading, error, retry }
  */
 export function useQuizQuestions() {
   const { user } = useAuth();
-  const { setTotalQuestions } = useQuiz();
-
-  const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { 
+    questions, 
+    loading, 
+    error, 
+    setQuestions, 
+    setLoading, 
+    setError, 
+    setTotalQuestions 
+  } = useQuiz();
 
   // useRef persists across mounts in Strict Mode development double-invocation
   const fetchInitiated = useRef(false);
@@ -32,18 +36,23 @@ export function useQuizQuestions() {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         try {
-          const { questions: cachedQuestions, timestamp } = JSON.parse(cached);
+          const { username, questions: cachedQuestions, timestamp } = JSON.parse(cached);
           const age = Date.now() - timestamp;
 
-          if (age < CACHE_EXPIRY_MS) {
-            console.log('[DevQuiz] Cache hit: Using cached questions.');
-            setQuestions(cachedQuestions);
-            setTotalQuestions(cachedQuestions.length);
-            setLoading(false);
-            setError('');
-            return;
+          // Ensure the cached questions belong to the currently logged in candidate
+          if (username === user) {
+            if (age < CACHE_EXPIRY_MS) {
+              console.log(`[DevQuiz] Cache hit: Using cached questions for candidate: ${user}`);
+              setQuestions(cachedQuestions);
+              setTotalQuestions(cachedQuestions.length);
+              setLoading(false);
+              setError('');
+              return;
+            } else {
+              console.log('[DevQuiz] Cache expired.');
+            }
           } else {
-            console.log('[DevQuiz] Cache expired.');
+            console.log(`[DevQuiz] Stale cache belongs to a different candidate (${username}). Ignoring cache.`);
           }
         } catch (e) {
           console.warn('[DevQuiz] Cache parsing failed, clearing corrupted data.');
@@ -69,8 +78,9 @@ export function useQuizQuestions() {
       setQuestions(data);
       setTotalQuestions(data.length);
 
-      // Save valid data to localStorage cache
+      // Save candidate-specific data to localStorage cache
       localStorage.setItem(CACHE_KEY, JSON.stringify({
+        username: user,
         questions: data,
         timestamp: Date.now()
       }));
@@ -81,20 +91,28 @@ export function useQuizQuestions() {
       setError(err.message || 'An error occurred while loading questions.');
       setLoading(false);
     }
-  }, [user, setTotalQuestions]);
+  }, [user, setQuestions, setLoading, setError, setTotalQuestions]);
 
   // Manual retry handler
   const retry = useCallback(() => {
-    console.log('[DevQuiz] Retry triggered. Invalidating cache and resetting refs.');
+    console.log('[DevQuiz] Retry triggered. Invalidating cache and resetting context questions.');
     localStorage.removeItem(CACHE_KEY);
+    setQuestions([]);
     fetchInitiated.current = false;
     loadQuestions(true);
-  }, [loadQuestions]);
+  }, [loadQuestions, setQuestions]);
 
-  // Fetch questions on mount (triggers once unless dependency updates)
+  // Fetch questions on mount
   useEffect(() => {
+    // If questions are already loaded in memory, don't run loadQuestions on mount (important for Retake Quiz)
+    if (questions && questions.length > 0) {
+      console.log('[DevQuiz] Questions already exist in memory. Skipping mount fetch.');
+      setLoading(false);
+      setError('');
+      return;
+    }
     loadQuestions();
-  }, [loadQuestions]);
+  }, [loadQuestions, questions, setLoading, setError]);
 
   return { questions, loading, error, retry };
 }

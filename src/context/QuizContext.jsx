@@ -4,19 +4,28 @@ import { useAuth } from './AuthContext';
 // Initialize context
 const QuizContext = createContext(null);
 
+const CACHE_KEY = 'quiz_questions_cache';
+
 /**
  * QuizProvider provides state management for the user profile, active session, and final score.
  */
 export function QuizProvider({ children }) {
   const [score, setScore] = useState(0);
-  const [totalQuestions, setTotalQuestions] = useState(10);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const { user } = useAuth();
 
-  // Automatically reset score when user logs out
+  // Automatically clear quiz session when user logs out
   useEffect(() => {
     if (!user) {
+      localStorage.removeItem(CACHE_KEY);
+      setQuestions([]);
       setScore(0);
-      setTotalQuestions(10);
+      setTotalQuestions(0);
+      setError('');
+      setLoading(true);
     }
   }, [user]);
 
@@ -24,8 +33,19 @@ export function QuizProvider({ children }) {
     setScore(newScore);
   };
 
+  // Prepares the app for a retake (retains same questions, resets score/progress)
   const resetQuiz = () => {
     setScore(0);
+  };
+
+  // Clears all states and local cache upon sign out
+  const clearQuizSession = () => {
+    localStorage.removeItem(CACHE_KEY);
+    setQuestions([]);
+    setScore(0);
+    setTotalQuestions(0);
+    setError('');
+    setLoading(true);
   };
 
   return (
@@ -33,9 +53,17 @@ export function QuizProvider({ children }) {
       value={{
         score,
         totalQuestions,
-        updateScore,
+        questions,
+        loading,
+        error,
+        setScore,
         setTotalQuestions,
-        resetQuiz
+        setQuestions,
+        setLoading,
+        setError,
+        updateScore,
+        resetQuiz,
+        clearQuizSession
       }}
     >
       {children}

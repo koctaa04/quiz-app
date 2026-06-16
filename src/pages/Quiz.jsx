@@ -12,7 +12,7 @@ import { useQuizQuestions } from '../hooks/useQuizQuestions';
  */
 export default function Quiz() {
   const { user, logout } = useAuth();
-  const { updateScore } = useQuiz();
+  const { updateScore, clearQuizSession } = useQuiz();
   const navigate = useNavigate();
 
   // Consume logic, caching, loading, error, and retry states from custom hook
@@ -162,7 +162,7 @@ export default function Quiz() {
           <span className="badge badge-primary">Active Candidate</span>
           <h3 style={{ fontSize: '1.15rem', color: 'var(--text-inverse)' }}>Candidate: {user}</h3>
         </div>
-        <Button onClick={() => { logout(); navigate('/login'); }} variant="secondary" style={{ width: 'auto', padding: '0.5rem 1rem' }}>
+        <Button onClick={() => { clearQuizSession(); logout(); navigate('/login'); }} variant="secondary" style={{ width: 'auto', padding: '0.5rem 1rem' }}>
           Quit Quiz
         </Button>
       </div>
