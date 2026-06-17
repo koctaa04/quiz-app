@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './Timer.css';
 
 /**
@@ -9,12 +9,15 @@ import './Timer.css';
  * @param {number} props.duration - Initial duration in seconds (default: 300)
  * @param {function} props.onTimeUp - Callback function triggered when countdown hits 0
  */
-export default function Timer({ duration = 300, onTimeUp, onTick }) {
-  const [timeLeft, setTimeLeft] = useState(duration);
+export default function Timer({ duration = 300, initialTime, onTimeUp, onTick }) {
+  const [timeLeft, setTimeLeft] = useState(() => {
+    return initialTime !== undefined ? initialTime : duration;
+  });
   
   // Use refs to capture the latest callback references.
   const onTimeUpRef = useRef(onTimeUp);
   const onTickRef = useRef(onTick);
+  const isInitialized = useRef(false);
   
   useEffect(() => {
     onTimeUpRef.current = onTimeUp;
@@ -26,10 +29,15 @@ export default function Timer({ duration = 300, onTimeUp, onTick }) {
 
   // Synchronize timeLeft state with duration prop when it changes (e.g. on retry/reset)
   useEffect(() => {
-    setTimeLeft(duration);
-    if (onTickRef.current) {
-      onTickRef.current(duration);
+    if (isInitialized.current) {
+      setTimeLeft(initialTime !== undefined ? initialTime : duration);
+      if (onTickRef.current) {
+        onTickRef.current(initialTime !== undefined ? initialTime : duration);
+      }
+    } else {
+      isInitialized.current = true;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duration]);
 
   useEffect(() => {

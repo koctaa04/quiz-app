@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useQuiz } from '../context/QuizContext';
 import { useQuizQuestions } from '../hooks/useQuizQuestions';
 import Timer from '../components/Timer';
+import { getActiveQuizState, saveActiveQuizState, clearActiveQuizState } from '../utils/localStorage';
 
 const QUIZ_DURATION = 60; // duration in seconds
 
@@ -21,10 +22,31 @@ export default function Quiz() {
   // Consume logic, caching, loading, error, and retry states from custom hook
   const { questions, loading, error, retry } = useQuizQuestions();
 
-  // Local UI-only progression states
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(QUIZ_DURATION);
+  // Local UI-only progression states (lazily restored from localStorage if active)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => {
+    const active = getActiveQuizState(user);
+    return active ? active.currentQuestionIndex : 0;
+  });
+  const [selectedAnswers, setSelectedAnswers] = useState(() => {
+    const active = getActiveQuizState(user);
+    return active ? active.selectedAnswers : {};
+  });
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const active = getActiveQuizState(user);
+    return active ? active.timeLeft : QUIZ_DURATION;
+  });
+
+  // Sync quiz progress state to localStorage on every change
+  useEffect(() => {
+    if (user && questions && questions.length > 0) {
+      saveActiveQuizState(user, {
+        questions,
+        selectedAnswers,
+        currentQuestionIndex,
+        timeLeft
+      });
+    }
+  }, [user, questions, selectedAnswers, currentQuestionIndex, timeLeft]);
 
   // Handle option selection
   const handleSelectOption = (option) => {
@@ -73,6 +95,7 @@ export default function Quiz() {
       timeOut: isTimeOut
     };
 
+    clearActiveQuizState(user);
     updateScore(correctCount);
     updateQuizResult(result);
     return result;
@@ -210,7 +233,7 @@ export default function Quiz() {
           <span className="badge badge-primary">Active Candidate</span>
           <h3 style={{ fontSize: '1.15rem', color: 'var(--text-inverse)' }}>Candidate: {user}</h3>
         </div>
-        <Timer duration={QUIZ_DURATION} onTimeUp={handleTimeUp} onTick={setTimeLeft} />
+        <Timer duration={QUIZ_DURATION} initialTime={timeLeft} onTimeUp={handleTimeUp} onTick={setTimeLeft} />
         <Button onClick={() => { clearQuizSession(); logout(); navigate('/login'); }} variant="secondary" style={{ width: 'auto', padding: '0.5rem 1rem' }}>
           Quit Quiz
         </Button>

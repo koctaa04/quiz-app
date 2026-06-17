@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
+import { getActiveQuizState } from '../utils/localStorage';
 
 /**
  * Login view shell. Users input their name to start the technical quiz.
@@ -10,8 +11,18 @@ import { useAuth } from '../context/AuthContext';
 export default function Login() {
   const [nameInput, setNameInput] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
+
+  // If user is already logged in and has an active quiz, redirect to /quiz immediately
+  useEffect(() => {
+    if (user) {
+      const activeState = getActiveQuizState(user);
+      if (activeState) {
+        navigate('/quiz');
+      }
+    }
+  }, [user, navigate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

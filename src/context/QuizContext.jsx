@@ -1,10 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { 
+  getQuizResultCache, 
+  saveQuizResultCache, 
+  clearQuizResultCache, 
+  clearQuestionsCache, 
+  clearActiveQuizState 
+} from '../utils/localStorage';
 
 // Initialize context
 const QuizContext = createContext(null);
-
-const CACHE_KEY = 'quiz_questions_cache';
 
 /**
  * QuizProvider provides state management for the user profile, active session, and final score.
@@ -16,27 +21,24 @@ export function QuizProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [quizResult, setQuizResult] = useState(() => {
-    try {
-      const saved = localStorage.getItem('quiz_result_cache');
-      return saved ? JSON.parse(saved) : null;
-    } catch (e) {
-      console.warn('[QuizContext] Error parsing cached quiz result:', e);
-      return null;
-    }
+    return getQuizResultCache();
   });
   const { user } = useAuth();
 
   // Automatically clear quiz session when user logs out
   useEffect(() => {
     if (!user) {
-      localStorage.removeItem(CACHE_KEY);
-      localStorage.removeItem('quiz_result_cache');
-      setQuestions([]);
-      setScore(0);
-      setTotalQuestions(0);
-      setQuizResult(null);
-      setError('');
-      setLoading(true);
+      clearQuestionsCache();
+      clearQuizResultCache();
+      const timer = setTimeout(() => {
+        setQuestions([]);
+        setScore(0);
+        setTotalQuestions(0);
+        setQuizResult(null);
+        setError('');
+        setLoading(true);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [user]);
 
@@ -47,9 +49,9 @@ export function QuizProvider({ children }) {
   const updateQuizResult = (result) => {
     setQuizResult(result);
     if (result) {
-      localStorage.setItem('quiz_result_cache', JSON.stringify(result));
+      saveQuizResultCache(result);
     } else {
-      localStorage.removeItem('quiz_result_cache');
+      clearQuizResultCache();
     }
   };
 
@@ -57,13 +59,15 @@ export function QuizProvider({ children }) {
   const resetQuiz = () => {
     setScore(0);
     setQuizResult(null);
-    localStorage.removeItem('quiz_result_cache');
+    clearQuizResultCache();
+    clearActiveQuizState(user);
   };
 
   // Clears all states and local cache upon sign out
   const clearQuizSession = () => {
-    localStorage.removeItem(CACHE_KEY);
-    localStorage.removeItem('quiz_result_cache');
+    clearQuestionsCache();
+    clearQuizResultCache();
+    clearActiveQuizState(user);
     setQuestions([]);
     setScore(0);
     setTotalQuestions(0);

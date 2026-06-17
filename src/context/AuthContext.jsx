@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
+import { getStoredUsername, saveStoredUsername, clearStoredUsername } from '../utils/localStorage';
 
 // Create AuthContext
 const AuthContext = createContext(null);
@@ -8,18 +9,18 @@ const AuthContext = createContext(null);
  */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    // Check localStorage to keep user logged in on page refresh
-    return localStorage.getItem('quiz_username') || '';
+    // Check localStorage utility to keep user logged in on page refresh
+    return getStoredUsername();
   });
 
   const login = (username) => {
     setUser(username);
-    localStorage.setItem('quiz_username', username);
+    saveStoredUsername(username);
   };
 
   const logout = () => {
     setUser('');
-    localStorage.removeItem('quiz_username');
+    clearStoredUsername();
   };
 
   return (

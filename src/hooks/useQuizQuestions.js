@@ -2,8 +2,13 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useQuiz } from '../context/QuizContext';
 import { triviaApi } from '../services/triviaApi';
+import { 
+  getQuestionsCache, 
+  saveQuestionsCache, 
+  clearQuestionsCache, 
+  getActiveQuizState 
+} from '../utils/localStorage';
 
-const CACHE_KEY = 'quiz_questions_cache';
 const CACHE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
 /**
@@ -31,12 +36,25 @@ export function useQuizQuestions() {
   const loadQuestions = useCallback(async (forceFetch = false) => {
     if (!user) return;
 
+    // 0. Active quiz state check (highest priority for resuming)
+    if (!forceFetch) {
+      const activeState = getActiveQuizState(user);
+      if (activeState && activeState.questions && activeState.questions.length > 0) {
+        console.log(`[DevQuiz] Restoring questions from active quiz state for candidate: ${user}`);
+        setQuestions(activeState.questions);
+        setTotalQuestions(activeState.questions.length);
+        setLoading(false);
+        setError('');
+        return;
+      }
+    }
+
     // 1. Caching layer (check unless user explicitly requested a fresh retry)
     if (!forceFetch) {
-      const cached = localStorage.getItem(CACHE_KEY);
+      const cached = getQuestionsCache();
       if (cached) {
         try {
-          const { username, questions: cachedQuestions, timestamp } = JSON.parse(cached);
+          const { username, questions: cachedQuestions, timestamp } = cached;
           const age = Date.now() - timestamp;
 
           // Ensure the cached questions belong to the currently logged in candidate
@@ -55,8 +73,8 @@ export function useQuizQuestions() {
             console.log(`[DevQuiz] Stale cache belongs to a different candidate (${username}). Ignoring cache.`);
           }
         } catch (e) {
-          console.warn('[DevQuiz] Cache parsing failed, clearing corrupted data.');
-          localStorage.removeItem(CACHE_KEY);
+          console.warn('[DevQuiz] Cache parsing failed, clearing corrupted data.', e);
+          clearQuestionsCache();
         }
       }
     }
@@ -79,11 +97,11 @@ export function useQuizQuestions() {
       setTotalQuestions(data.length);
 
       // Save candidate-specific data to localStorage cache
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
+      saveQuestionsCache({
         username: user,
         questions: data,
         timestamp: Date.now()
-      }));
+      });
 
       setLoading(false);
     } catch (err) {
@@ -96,7 +114,7 @@ export function useQuizQuestions() {
   // Manual retry handler
   const retry = useCallback(() => {
     console.log('[DevQuiz] Retry triggered. Invalidating cache and resetting context questions.');
-    localStorage.removeItem(CACHE_KEY);
+    clearQuestionsCache();
     setQuestions([]);
     fetchInitiated.current = false;
     loadQuestions(true);
