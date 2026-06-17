@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 import { useQuiz } from '../context/QuizContext';
 import { useQuizQuestions } from '../hooks/useQuizQuestions';
+import Timer from '../components/Timer';
 
 /**
  * Quiz view. Displays loaded questions and manages quiz progress.
@@ -40,6 +41,18 @@ export default function Quiz() {
     });
     updateScore(computedScore);
     navigate('/result');
+  };
+
+  // Handle when timer reaches 0: auto-submit and redirect
+  const handleTimeUp = () => {
+    let computedScore = 0;
+    questions.forEach((q, index) => {
+      if (selectedAnswers[index] === q.correct_answer) {
+        computedScore += 1;
+      }
+    });
+    updateScore(computedScore);
+    navigate('/result', { state: { timeOut: true } });
   };
 
   // If no user is logged in, redirect or prompt
@@ -157,11 +170,12 @@ export default function Quiz() {
 
   return (
     <div className="container animate-fade-in">
-      <div style={{ width: '100%', maxWidth: '650px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ width: '100%', maxWidth: '650px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
         <div>
           <span className="badge badge-primary">Active Candidate</span>
           <h3 style={{ fontSize: '1.15rem', color: 'var(--text-inverse)' }}>Candidate: {user}</h3>
         </div>
+        <Timer duration={60} onTimeUp={handleTimeUp} />
         <Button onClick={() => { clearQuizSession(); logout(); navigate('/login'); }} variant="secondary" style={{ width: 'auto', padding: '0.5rem 1rem' }}>
           Quit Quiz
         </Button>

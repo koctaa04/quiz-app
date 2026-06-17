@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { useQuiz } from '../context/QuizContext';
@@ -13,6 +13,8 @@ export default function Result() {
   const { user, logout } = useAuth();
   const { score, totalQuestions, resetQuiz, clearQuizSession } = useQuiz();
   const navigate = useNavigate();
+  const location = useLocation();
+  const timeOut = location.state?.timeOut || false;
 
   // If no user is logged in, redirect or prompt
   if (!user) {
@@ -43,6 +45,31 @@ export default function Result() {
         glow={true}
         style={{ maxWidth: '480px', width: '100%', textAlign: 'center' }}
       >
+        {timeOut && (
+          <div 
+            style={{
+              background: 'rgba(244, 63, 94, 0.15)',
+              color: 'var(--error)',
+              border: '1px solid rgba(244, 63, 94, 0.3)',
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              marginTop: '1rem',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Time's up! Answers submitted automatically.
+          </div>
+        )}
         <div style={{ margin: '2rem 0' }}>
           {passed ? (
             <span className="badge badge-success">Passed</span>

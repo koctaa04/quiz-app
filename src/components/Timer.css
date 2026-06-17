@@ -1,0 +1,126 @@
+.timer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.6rem 1.25rem;
+  min-width: 140px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all var(--transition-normal);
+}
+
+.timer-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.timer-time {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-inverse);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.timer-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--primary-light);
+  transition: color var(--transition-normal);
+}
+
+/* Progress bar wrapper */
+.timer-progress-bar-wrapper {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.timer-progress-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s linear, background-color var(--transition-normal);
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+/* Warnings and Alerts */
+.timer-warning {
+  border-color: rgba(245, 158, 11, 0.3); /* Amber/Orange */
+  background: rgba(245, 158, 11, 0.03);
+}
+
+.timer-warning .timer-time {
+  color: #f59e0b;
+}
+
+.timer-warning .timer-icon {
+  color: #f59e0b;
+}
+
+.timer-warning .timer-progress-bar {
+  background: #f59e0b;
+}
+
+.timer-critical {
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.05);
+  box-shadow: 0 0 15px rgba(244, 63, 94, 0.15);
+  animation: timer-pulse-border 1.5s infinite alternate;
+}
+
+.timer-critical .timer-time {
+  color: var(--error);
+  animation: timer-pulse-text 1s infinite alternate;
+}
+
+.timer-critical .timer-icon {
+  color: var(--error);
+  animation: timer-pulse-icon 1s infinite alternate;
+}
+
+.timer-critical .timer-progress-bar {
+  background: var(--error);
+}
+
+@keyframes timer-pulse-border {
+  0% {
+    border-color: rgba(244, 63, 94, 0.3);
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.05);
+  }
+  100% {
+    border-color: rgba(244, 63, 94, 0.7);
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.25);
+  }
+}
+
+@keyframes timer-pulse-text {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes timer-pulse-icon {
+  0% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
