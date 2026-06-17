@@ -15,15 +15,26 @@ export function QuizProvider({ children }) {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [quizResult, setQuizResult] = useState(() => {
+    try {
+      const saved = localStorage.getItem('quiz_result_cache');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.warn('[QuizContext] Error parsing cached quiz result:', e);
+      return null;
+    }
+  });
   const { user } = useAuth();
 
   // Automatically clear quiz session when user logs out
   useEffect(() => {
     if (!user) {
       localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem('quiz_result_cache');
       setQuestions([]);
       setScore(0);
       setTotalQuestions(0);
+      setQuizResult(null);
       setError('');
       setLoading(true);
     }
@@ -33,17 +44,30 @@ export function QuizProvider({ children }) {
     setScore(newScore);
   };
 
+  const updateQuizResult = (result) => {
+    setQuizResult(result);
+    if (result) {
+      localStorage.setItem('quiz_result_cache', JSON.stringify(result));
+    } else {
+      localStorage.removeItem('quiz_result_cache');
+    }
+  };
+
   // Prepares the app for a retake (retains same questions, resets score/progress)
   const resetQuiz = () => {
     setScore(0);
+    setQuizResult(null);
+    localStorage.removeItem('quiz_result_cache');
   };
 
   // Clears all states and local cache upon sign out
   const clearQuizSession = () => {
     localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem('quiz_result_cache');
     setQuestions([]);
     setScore(0);
     setTotalQuestions(0);
+    setQuizResult(null);
     setError('');
     setLoading(true);
   };
@@ -56,12 +80,14 @@ export function QuizProvider({ children }) {
         questions,
         loading,
         error,
+        quizResult,
         setScore,
         setTotalQuestions,
         setQuestions,
         setLoading,
         setError,
         updateScore,
+        updateQuizResult,
         resetQuiz,
         clearQuizSession
       }}

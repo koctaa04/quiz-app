@@ -9,20 +9,27 @@ import './Timer.css';
  * @param {number} props.duration - Initial duration in seconds (default: 300)
  * @param {function} props.onTimeUp - Callback function triggered when countdown hits 0
  */
-export default function Timer({ duration = 300, onTimeUp }) {
+export default function Timer({ duration = 300, onTimeUp, onTick }) {
   const [timeLeft, setTimeLeft] = useState(duration);
   
-  // Use a ref to capture the latest onTimeUp callback.
-  // This allows us to call the up-to-date callback without recreating the interval.
+  // Use refs to capture the latest callback references.
   const onTimeUpRef = useRef(onTimeUp);
+  const onTickRef = useRef(onTick);
   
   useEffect(() => {
     onTimeUpRef.current = onTimeUp;
   }, [onTimeUp]);
 
+  useEffect(() => {
+    onTickRef.current = onTick;
+  }, [onTick]);
+
   // Synchronize timeLeft state with duration prop when it changes (e.g. on retry/reset)
   useEffect(() => {
     setTimeLeft(duration);
+    if (onTickRef.current) {
+      onTickRef.current(duration);
+    }
   }, [duration]);
 
   useEffect(() => {
@@ -35,9 +42,16 @@ export default function Timer({ duration = 300, onTimeUp }) {
           if (onTimeUpRef.current) {
             onTimeUpRef.current();
           }
+          if (onTickRef.current) {
+            onTickRef.current(0);
+          }
           return 0;
         }
-        return prev - 1;
+        const nextTime = prev - 1;
+        if (onTickRef.current) {
+          onTickRef.current(nextTime);
+        }
+        return nextTime;
       });
     }, 1000);
 

@@ -7,13 +7,15 @@ import { useQuiz } from '../context/QuizContext';
 import { useQuizQuestions } from '../hooks/useQuizQuestions';
 import Timer from '../components/Timer';
 
+const QUIZ_DURATION = 60; // duration in seconds
+
 /**
  * Quiz view. Displays loaded questions and manages quiz progress.
  * Focuses purely on the UI presentation layer.
  */
 export default function Quiz() {
   const { user, logout } = useAuth();
-  const { updateScore, clearQuizSession } = useQuiz();
+  const { updateScore, updateQuizResult, clearQuizSession } = useQuiz();
   const navigate = useNavigate();
 
   // Consume logic, caching, loading, error, and retry states from custom hook
@@ -22,6 +24,7 @@ export default function Quiz() {
   // Local UI-only progression states
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [timeLeft, setTimeLeft] = useState(QUIZ_DURATION);
 
   // Handle option selection
   const handleSelectOption = (option) => {
@@ -31,27 +34,59 @@ export default function Quiz() {
     }));
   };
 
-  // Submit quiz score and navigate to result
-  const handleSubmitQuiz = () => {
-    let computedScore = 0;
+  // Helper to compute and save results
+  const calculateAndSaveResults = (finalTimeLeft, isTimeOut = false) => {
+    const totalQuestions = questions.length;
+    let correctCount = 0;
+    let answeredCount = 0;
+
     questions.forEach((q, index) => {
-      if (selectedAnswers[index] === q.correct_answer) {
-        computedScore += 1;
+      const selected = selectedAnswers[index];
+      if (selected !== undefined && selected !== null && selected !== '') {
+        answeredCount += 1;
+        if (selected === q.correct_answer) {
+          correctCount += 1;
+        }
       }
     });
-    updateScore(computedScore);
+
+    const incorrectCount = answeredCount - correctCount;
+    const unansweredCount = totalQuestions - answeredCount;
+    const timeSpent = Math.max(0, QUIZ_DURATION - finalTimeLeft);
+    const avgTimePerQuestion = answeredCount > 0 ? (timeSpent / answeredCount) : 0;
+    const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+    const passed = percentage >= 60;
+
+    const result = {
+      username: user,
+      score: correctCount,
+      totalQuestions,
+      correctCount,
+      incorrectCount,
+      unansweredCount,
+      answeredCount,
+      timeLeft: finalTimeLeft,
+      duration: QUIZ_DURATION,
+      avgTimePerQuestion,
+      percentage,
+      passed,
+      timeOut: isTimeOut
+    };
+
+    updateScore(correctCount);
+    updateQuizResult(result);
+    return result;
+  };
+
+  // Submit quiz score and navigate to result
+  const handleSubmitQuiz = () => {
+    calculateAndSaveResults(timeLeft, false);
     navigate('/result');
   };
 
   // Handle when timer reaches 0: auto-submit and redirect
   const handleTimeUp = () => {
-    let computedScore = 0;
-    questions.forEach((q, index) => {
-      if (selectedAnswers[index] === q.correct_answer) {
-        computedScore += 1;
-      }
-    });
-    updateScore(computedScore);
+    calculateAndSaveResults(0, true);
     navigate('/result', { state: { timeOut: true } });
   };
 
@@ -175,7 +210,7 @@ export default function Quiz() {
           <span className="badge badge-primary">Active Candidate</span>
           <h3 style={{ fontSize: '1.15rem', color: 'var(--text-inverse)' }}>Candidate: {user}</h3>
         </div>
-        <Timer duration={60} onTimeUp={handleTimeUp} />
+        <Timer duration={QUIZ_DURATION} onTimeUp={handleTimeUp} onTick={setTimeLeft} />
         <Button onClick={() => { clearQuizSession(); logout(); navigate('/login'); }} variant="secondary" style={{ width: 'auto', padding: '0.5rem 1rem' }}>
           Quit Quiz
         </Button>
